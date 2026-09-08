@@ -1,8 +1,8 @@
 import json
 import os
-from flask import Flask, request
-import gspread
+from flask import Flask, jsonify, request
 from google.oauth2.service_account import Credentials
+import gspread
 
 app = Flask(__name__)
 
@@ -13,14 +13,12 @@ def conectar_inventario():
       "https://www.googleapis.com/auth/spreadsheets",
       "https://www.googleapis.com/auth/drive",
   ]
-  # Lee la llave JSON que guardamos en Render
   creds_json = os.environ.get("GOOGLE_CREDENTIALS_JSON")
   creds_dict = json.loads(creds_json)
 
   creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
   client = gspread.authorize(creds)
 
-  # Abre tu hoja y la pestaña (cambia 'Productos' si la nombraste distinto)
   sheet = client.open("Inventario Mateos Food").worksheet("Productos")
   return sheet.get_all_records()
 
@@ -30,13 +28,7 @@ def home():
   return "¡Bot de Mateo's Food en línea y conectado!"
 
 
-@app.route("/webhook", methods=["POST"])
-def webhook():
-  # Aquí es donde recibiremos los mensajes de WhatsApp
-  datos_menu = conectar_inventario()
-  print("Inventario leído con éxito:", datos_menu)
-  return "OK", 200
-
+# Ruta de diagnóstico que ya probamos
 @app.route("/probar-inventario", methods=["GET"])
 def probar_inventario():
   try:
@@ -44,6 +36,54 @@ def probar_inventario():
     return {"estado": "éxito", "datos": productos}, 200
   except Exception as e:
     return {"estado": "error", "detalles": str(e)}, 500
+
+
+# Webhook para recibir y responder mensajes de WhatsApp
+@app.route("/webhook", methods=["GET", "POST"])
+def webhook():
+  # Verificación inicial del webhook (Meta/WhatsApp pide esto a veces)
+  if request.method == "GET":
+    mode = request.args.get("hub.mode")
+    token = request.args.get("hub.verify_token")
+    challenge = request.args.get("hub.challenge")
+    # Puedes cambiar 'mateos_token' por la contraseña que elijas al configurar Meta
+    if mode and token:
+      if mode == "subscribe" and token == "mateos_token":
+        return challenge, 200
+      else:
+        return "Token inválido", 403
+    return "Servidor Webhook activo", 200
+
+  # Cuando llega un mensaje de un cliente por POST
+  if request.method == "POST":
+    data = request.json
+    print("Mensaje recibido:", data)
+
+    try:
+      # Aquí es donde leemos el inventario para armar la respuesta del menú
+      productos = conectar_inventario()
+
+      # Armamos un mensaje bonito con los productos y precios
+      mensaje_respuesta = "🍔 *Menú de Mateo's Food* 🍔\n\n"
+      for p in productos:
+        if p.get("estado") == "disponible":
+          mensaje_respuesta += (
+              f"• *{p.get('producto')}* - ${p.get('precio')} (Stock:"
+              f" {p.get('stock')})\n"
+          )
+
+      mensaje_respuesta += (
+          "\n¿Qué te gustaría ordenar hoy? Responde con tu pedido."
+      )
+
+      # Aquí posteriormente conectaremos el envío de la respuesta de vuelta a WhatsApp
+      print("Respuesta generada para enviar:", mensaje_respuesta)
+
+    except Exception as e:
+      print("Error al procesar el inventario:", str(e))
+
+    return "EVENT_RECEIVED", 200
+
 
 if __name__ == "__main__":
   app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
