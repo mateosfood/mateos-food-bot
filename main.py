@@ -41,12 +41,12 @@ def probar_inventario():
 # Webhook para recibir y responder mensajes de WhatsApp
 @app.route("/webhook", methods=["GET", "POST"])
 def webhook():
-  # Verificación inicial del webhook (Meta/WhatsApp pide esto a veces)
+  # Verificación inicial del webhook (Meta/WhatsApp pide esto)
   if request.method == "GET":
     mode = request.args.get("hub.mode")
     token = request.args.get("hub.verify_token")
     challenge = request.args.get("hub.challenge")
-    # Puedes cambiar 'mateos_token' por la contraseña que elijas al configurar Meta
+
     if mode and token:
       if mode == "subscribe" and token == "mateos_token":
         return challenge, 200
@@ -60,10 +60,7 @@ def webhook():
     print("Mensaje recibido:", data)
 
     try:
-      # Aquí es donde leemos el inventario para armar la respuesta del menú
       productos = conectar_inventario()
-
-      # Armamos un mensaje bonito con los productos y precios
       mensaje_respuesta = "🍔 *Menú de Mateo's Food* 🍔\n\n"
       for p in productos:
         if p.get("estado") == "disponible":
@@ -71,14 +68,10 @@ def webhook():
               f"• *{p.get('producto')}* - ${p.get('precio')} (Stock:"
               f" {p.get('stock')})\n"
           )
-
       mensaje_respuesta += (
           "\n¿Qué te gustaría ordenar hoy? Responde con tu pedido."
       )
-
-      # Aquí posteriormente conectaremos el envío de la respuesta de vuelta a WhatsApp
       print("Respuesta generada para enviar:", mensaje_respuesta)
-
     except Exception as e:
       print("Error al procesar el inventario:", str(e))
 
