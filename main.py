@@ -37,6 +37,13 @@ def webhook():
   print("Inventario leído con éxito:", datos_menu)
   return "OK", 200
 
+@app.route("/probar-inventario", methods=["GET"])
+def probar_inventario():
+  try:
+    productos = conectar_inventario()
+    return {"estado": "éxito", "datos": productos}, 200
+  except Exception as e:
+    return {"estado": "error", "detalles": str(e)}, 500
 
 if __name__ == "__main__":
   app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
