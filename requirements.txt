@@ -1,7 +1,4 @@
 flask
-grequests
-google-generativeai
 gspread
-oauth2client
-requests
+google-auth
 gunicorn
