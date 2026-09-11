@@ -1,3 +1,45 @@
+import json
+import os
+from flask import Flask, jsonify, request
+from google.oauth2.service_account import Credentials
+import gspread
+import requests
+
+app = Flask(__name__)
+
+
+# Configurar conexión con Google Sheets usando la variable de entorno
+def conectar_inventario():
+  scope = [
+      "https://www.googleapis.com/auth/spreadsheets",
+      "https://www.googleapis.com/auth/drive",
+  ]
+  creds_json = os.environ.get("GOOGLE_CREDENTIALS_JSON")
+  creds_dict = json.loads(creds_json)
+
+  creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
+  client = gspread.authorize(creds)
+
+  sheet = client.open("Inventario Mateos Food").worksheet("Productos")
+  return sheet.get_all_records()
+
+
+@app.route("/", methods=["GET"])
+def home():
+  return "¡Bot de Mateo's Food en línea y conectado!"
+
+
+# Ruta de diagnóstico
+@app.route("/probar-inventario", methods=["GET"])
+def probar_inventario():
+  try:
+    productos = conectar_inventario()
+    return {"estado": "éxito", "datos": productos}, 200
+  except Exception as e:
+    return {"estado": "error", "detalles": str(e)}, 500
+
+
+# Webhook para recibir y responder mensajes de WhatsApp
 @app.route("/webhook", methods=["GET", "POST"])
 def webhook():
   if request.method == "GET":
@@ -5,7 +47,6 @@ def webhook():
 
   if request.method == "POST":
     data = request.json
-    # Imprimir el JSON completo en los logs de Render para depurar
     print("--- JSON RECIBIDO DE EVOLUTION ---")
     print(json.dumps(data, indent=2))
 
@@ -57,3 +98,7 @@ def webhook():
       print("Error crítico al procesar el mensaje:", str(e))
 
     return "EVENT_RECEIVED", 200
+
+
+if __name__ == "__main__":
+  app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
