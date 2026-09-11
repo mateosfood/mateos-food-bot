@@ -83,7 +83,7 @@ def registrar_comanda_en_sheets(comanda_data):
     print(f"⚠️ Error al guardar en Sheets: {e}")
 
 
-# Configuración segura de Gemini API usando Variable de Entorno
+# Configuración segura de Gemini API
 MI_API_KEY = os.environ.get("GEMINI_API_KEY")
 client = genai.Client(api_key=MI_API_KEY)
 
@@ -136,7 +136,7 @@ def obtener_o_crear_chat(cliente_id):
   if cliente_id not in sesiones_clientes:
     print(f"✨ Creando nueva sesión de chat para el cliente: {cliente_id}")
     sesiones_clientes[cliente_id] = client.chats.create(
-        model="gemini-2.5-flash",
+        model="gemini-2.0-flash",
         config=types.GenerateContentConfig(
             system_instruction=prompt_sistema, temperature=0.3
         ),
