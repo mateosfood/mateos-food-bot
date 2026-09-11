@@ -110,7 +110,7 @@ TU OBJETIVO:
 Atender al cliente por WhatsApp, tomar su pedido exacto, resolver dudas del menú, verificar la zona de entrega, calcular el total y obtener los datos de pago.
 
 MENÚ Y PRECIOS:
-- Hamburguesa Normal: $70 (Incluye papas fritas)
+- Hamburguesa Normal: $75 (Incluye papas fritas)
 - Hamburguesa de Arrachera: $85 (Incluye papas fritas)
 - Pirata: $85
 - Orden de Tacos de Maíz (5 tacos): $85
@@ -137,11 +137,11 @@ REGLAS DE ATENCIÓN:
 "tipo_entrega": "domicilio / recoger",
 "cliente": "Nombre",
 "direccion": "Dirección completa (Zona: Carbonera Norte/Sur)",
-"items": [{"producto": "Nombre", "cantidad": 1, "detalles": "Sin cebolla", "precio_unitario": 85}],
+"items": [{"producto": "Nombre", "cantidad": 1, "detalles": "Sin cebolla", "precio_unitario": 75}],
 "metodo_pago": "efectivo / transferencia / tarjeta",
 "paga_con": 200,
-"cambio": 115,
-"total": 85
+"cambio": 125,
+"total": 75
 }
 """
 
