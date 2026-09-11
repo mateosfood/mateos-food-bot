@@ -152,7 +152,7 @@ def obtener_o_crear_chat(cliente_id):
   if cliente_id not in sesiones_clientes:
     print(f"✨ Creando nueva sesión de chat para el cliente: {cliente_id}")
     sesiones_clientes[cliente_id] = client.chats.create(
-        model="gemini-2.0-flash",
+        model="gemini-3.6-flash",
         config=types.GenerateContentConfig(
             system_instruction=prompt_sistema, temperature=0.3
         ),
@@ -235,3 +235,4 @@ def webhook():
 
 if __name__ == "__main__":
   app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+
