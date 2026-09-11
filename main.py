@@ -121,6 +121,12 @@ MENÚ Y PRECIOS:
 - Burrito de Frijol con Queso/Pizza: $30 c/u
 - Orden de Quesadillas de Harina (5 quesadillas): $85
 
+DATOS PARA TRANSFERENCIA BANCARIA:
+- Banco: [Banco Azteca]
+- CLABE Interbancaria: [127824001322868211]
+- A nombre de: [Adrian Mateos]
+*(Cuando el cliente elija pago por transferencia, proporciónale estos datos amablemente y recuérdale que te mande su comprobante).*
+
 REGLAS DE ZONAS, ENVÍO Y TIEMPOS (¡MUY IMPORTANTE!):
 1. **Zonas de Entrega permitidas:** Solo entregamos en **Carbonera Sur** y **Carbonera Norte** (en Carbonera Norte el límite de entrega es exclusivamente hasta la tienda "Feily"). Si el cliente pide de más lejos o de otro lugar, acláralo amablemente indicando que por el momento no abarcamos esa zona.
 2. **Costo de Envíos:** El envío es **GRATIS** ($0) en todas las zonas de entrega.
@@ -131,7 +137,7 @@ REGLAS DE ATENCIÓN:
 2. Pregunta si las hamburguesas o tacos llevan alguna modificación (ej. sin verdura, sin aderezos).
 3. Pregunta si el pedido es A DOMICILIO o PARA PASAR A RECOGER.
 4. Si es A DOMICILIO, pide la dirección exacta, asegúrate de que esté dentro de Carbonera Sur o Carbonera Norte (recordando el límite de la tienda Feily en el norte) y recuérdale que el tiempo estimado es de 30 minutos sin costo de envío.
-5. Pregunta el **método de pago (efectivo, transferencia o tarjeta)**. Si es en efectivo, pregunta con cuánto va a pagar para calcular el cambio. Si es con tarjeta (a domicilio), recuérdale que llevamos la terminal o coordina el cobro.
+5. Pregunta el **método de pago (efectivo, transferencia o tarjeta)**. Si es transferencia, dale los datos bancarios indicados arriba. Si es en efectivo, pregunta con cuánto va a pagar para calcular el cambio.
 6. AL CONFIRMAR EL PEDIDO: Muestra el resumen al cliente (incluyendo el tiempo estimado de 30 min y envío gratis) y, al final de tu mensaje, incluye la comanda en formato JSON encerrada entre ```json ... ``` con la siguiente estructura:
 {
 "tipo_entrega": "domicilio / recoger",
@@ -139,8 +145,8 @@ REGLAS DE ATENCIÓN:
 "direccion": "Dirección completa (Zona: Carbonera Norte/Sur)",
 "items": [{"producto": "Nombre", "cantidad": 1, "detalles": "Sin cebolla", "precio_unitario": 75}],
 "metodo_pago": "efectivo / transferencia / tarjeta",
-"paga_con": 200,
-"cambio": 125,
+"paga_con": 0,
+"cambio": 0,
 "total": 75
 }
 """
@@ -201,7 +207,12 @@ def webhook():
 
       chat_activo = obtener_o_crear_chat(telefono)
       respuesta = chat_activo.send_message(texto_usuario)
-      texto_respuesta = respuesta.text
+      texto_respuesta = respuesta.text if respuesta and respuesta.text else ""
+
+      if not texto_respuesta:
+        texto_respuesta = (
+            "¡Recibido! Dame un segundo para organizarlo. 🍔"
+        )
 
       match = re.search(r"```json\s*(\{.*?\})\s*```", texto_respuesta, re.DOTALL)
       if match:
