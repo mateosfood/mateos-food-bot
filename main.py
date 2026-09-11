@@ -6,19 +6,34 @@ import time
 from flask import Flask, jsonify, request
 from google import genai
 from google.genai import types
-from google.auth import default
+from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 import requests
 
 app = Flask(__name__)
 
-# Configuración de credenciales de Google para Sheets y Drive
-creds, _ = default()
-sheets_service = build("sheets", "v4", credentials=creds)
-drive_service = build("drive", "v3", credentials=creds)
+# Configuración de credenciales de Google desde la variable de entorno
+scope = [
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/drive",
+]
+
+
+def obtener_servicios_google():
+  creds_json = os.environ.get("GOOGLE_CREDENTIALS_JSON")
+  if not creds_json:
+    raise Exception(
+        "❌ Falta la variable de entorno GOOGLE_CREDENTIALS_JSON en Render."
+    )
+  creds_dict = json.loads(creds_json)
+  creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
+  sheets_s = build("sheets", "v4", credentials=creds)
+  drive_s = build("drive", "v3", credentials=creds)
+  return sheets_s, drive_s
 
 
 def obtener_spreadsheet_id():
+  _, drive_service = obtener_servicios_google()
   response = (
       drive_service.files()
       .list(
@@ -51,6 +66,7 @@ def obtener_spreadsheet_id():
 
 def registrar_comanda_en_sheets(comanda_data):
   try:
+    sheets_service, _ = obtener_servicios_google()
     spreadsheet_id = obtener_spreadsheet_id()
     items_txt = ", ".join([
         f"{item['cantidad']}x {item['producto']} ({item['detalles']})"
