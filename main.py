@@ -3,6 +3,7 @@ import os
 from flask import Flask, jsonify, request
 from google.oauth2.service_account import Credentials
 import gspread
+import requests
 
 app = Flask(__name__)
 
@@ -41,17 +42,8 @@ def probar_inventario():
 # Webhook para recibir y responder mensajes de WhatsApp
 @app.route("/webhook", methods=["GET", "POST"])
 def webhook():
-  # Verificación inicial del webhook (Meta/WhatsApp pide esto)
+  # Verificación inicial del webhook
   if request.method == "GET":
-    mode = request.args.get("hub.mode")
-    token = request.args.get("hub.verify_token")
-    challenge = request.args.get("hub.challenge")
-
-    if mode and token:
-      if mode == "subscribe" and token == "mateos_token":
-        return challenge, 200
-      else:
-        return "Token inválido", 403
     return "Servidor Webhook activo", 200
 
   # Cuando llega un mensaje de un cliente por POST
@@ -60,6 +52,22 @@ def webhook():
     print("Mensaje recibido:", data)
 
     try:
+      # Extraer datos de la estructura de Evolution API
+      incoming_data = data.get("data", {})
+      key = incoming_data.get("key", {})
+
+      # Ignorar mensajes enviados por el propio bot para evitar loops
+      if key.get("fromMe", False):
+        return "OK", 200
+
+      remote_jid = key.get("remoteJid", "")
+      # Obtener solo los dígitos del número de teléfono
+      telefono = remote_jid.split("@")[0] if "@" in remote_jid else remote_jid
+
+      if not telefono:
+        return "No phone found", 200
+
+      # Consultar inventario y armar el menú
       productos = conectar_inventario()
       mensaje_respuesta = "🍔 *Menú de Mateo's Food* 🍔\n\n"
       for p in productos:
@@ -71,12 +79,26 @@ def webhook():
       mensaje_respuesta += (
           "\n¿Qué te gustaría ordenar hoy? Responde con tu pedido."
       )
-      print("Respuesta generada para enviar:", mensaje_respuesta)
+
+      # Credenciales y URL de Evolution API desde las variables de entorno de Render
+      evo_url = os.environ.get("EVOLUTION_API_URL")
+      evo_instance = os.environ.get("EVOLUTION_INSTANCE", "Mateos Food")
+      evo_apikey = os.environ.get("EVOLUTION_API_KEY")
+
+      if evo_url and evo_apikey:
+        send_url = f"{evo_url}/message/sendText/{evo_instance}"
+        headers = {"apikey": evo_apikey, "Content-Type": "application/json"}
+        payload = {"number": telefono, "text": mensaje_respuesta}
+
+        res = requests.post(send_url, json=payload, headers=headers)
+        print("Respuesta de envío Evolution:", res.status_code, res.text)
+
     except Exception as e:
-      print("Error al procesar el inventario:", str(e))
+      print("Error al procesar el mensaje:", str(e))
 
     return "EVENT_RECEIVED", 200
 
 
 if __name__ == "__main__":
   app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+
