@@ -186,11 +186,15 @@ def webhook():
         return "OK", 200
 
       remote_jid = key.get("remoteJid", "")
+      
+      if "@g.us" in remote_jid:
+          return "OK", 200
+
       telefono = remote_jid.split("@")[0] if "@" in remote_jid else remote_jid
 
       if not telefono:
-        return "No phone found", 200
-
+          return "No phone found", 200
+     
       push_name = incoming_data.get("pushName", "Cliente")
 
       message_content = incoming_data.get("message", {})
