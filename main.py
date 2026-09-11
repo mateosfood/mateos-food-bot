@@ -57,7 +57,7 @@ def webhook():
       if not telefono:
         return "No phone found", 200
 
-      # Extraer el texto que mandó el cliente (compatible con varios formatos de Evolution)
+      # Extraer el texto que mandó el cliente
       message_content = incoming_data.get("message", {})
       texto_usuario = ""
       if isinstance(message_content, dict):
@@ -73,34 +73,43 @@ def webhook():
       mensaje_respuesta = ""
       pedido_encontrado = False
 
+      # Palabras clave de saludo o intenciones generales
+      saludos = ["hola", "buenas", "buenos días", "buenas tardes", "ola", "hey", "menu", "menú"]
+      es_saludo = any(s in texto_usuario for s in saludos)
+
       # Buscar si el usuario escribió el nombre de algún producto disponible
-      for idx, p in enumerate(productos, start=2):  # La fila 2 en Google Sheets
+      for idx, p in enumerate(productos, start=2):  # Asume fila 2 en Google Sheets
         nombre_prod = str(p.get("producto", "")).lower()
         if nombre_prod and nombre_prod in texto_usuario:
           stock_actual = int(p.get("stock", 0))
           if stock_actual > 0 and p.get("estado") == "disponible":
             # Descontar 1 en el stock
             nuevo_stock = stock_actual - 1
-            sheet.update_cell(idx, 4, nuevo_stock)  # Asumiendo que la columna 4 es Stock
+            sheet.update_cell(idx, 4, nuevo_stock)  # Columna 4 para Stock
 
             mensaje_respuesta = (
-                f"✅ ¡Pedido confirmado!\n\n"
-                f"Has pedido: *{p.get('producto')}* (-$ {p.get('precio')})\n"
-                f"¡Gracias por tu compra en Mateo's Food! En breve te lo preparamos."
+                f"¡Hola! 😊 Qué gusto saludarte.\n\n"
+                f"✅ ¡Perfecto! Hemos tomado tu pedido de: *{p.get('producto')}* por un total de *${p.get('precio')}*.\n\n"
+                f"Ya estamos manos a la obra en la cocina de Mateo's Food para preparártelo delicioso. ¡En breve sale tu orden! 🍔🔥"
             )
             pedido_encontrado = True
             break
           else:
             mensaje_respuesta = (
-                f"Lo sentimos, *{p.get('producto')}* por el momento"
-                " no tiene stock disponible."
+                f"¡Hola! Qué pena contigo, pero por el momento nos acabamos de quedar sin stock de *{p.get('producto')}*. "
+                f"¿Se te antoja elegir alguna otra opción de nuestro menú?"
             )
             pedido_encontrado = True
             break
 
-      # Si no escribió ningún producto válido, le mostramos el menú
+      # Si es un saludo o no escribió un producto válido, le damos la bienvenida amable con el menú
       if not pedido_encontrado:
-        mensaje_respuesta = "🍔 *Menú de Mateo's Food* 🍔\n\n"
+        saludo_inicial = "¡Hola! 👋 Bienvenido a *Mateo's Food*. Qué gusto tenerte por aquí, ¿qué se te antoja ordenar hoy?\n\nTe comparto nuestro menú disponible:\n\n"
+        if es_saludo:
+          mensaje_respuesta = saludo_inicial
+        else:
+          mensaje_respuesta = "¡Hola! No alcancé a distinguir bien tu pedido, pero con gusto te muestro lo que tenemos recién hecho:\n\n"
+
         for p in productos:
           if p.get("estado") == "disponible":
             mensaje_respuesta += (
@@ -108,7 +117,7 @@ def webhook():
                 f" {p.get('stock')})\n"
             )
         mensaje_respuesta += (
-            "\n¿Qué te gustaría ordenar hoy? Escribe el nombre del platillo tal cual aparece en la lista."
+            "\nEscribe el nombre del platillo tal cual aparece en la lista para confirmar tu pedido. ¡Aquí te esperamos! 🍔"
         )
 
       # Enviar respuesta por Evolution API
@@ -130,3 +139,4 @@ def webhook():
 
 if __name__ == "__main__":
   app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+
